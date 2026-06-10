@@ -3,13 +3,10 @@ import { refreshRekap } from './rekapitulasi.js';
 import { onFilterChange, applyDateFilter } from './filter.js';
 import { exportSheet } from './export.js';
 import { skeletonRows, emptyState } from './ui.js';
+import { loadJenisKegiatan, addJenisKegiatan, removeJenisKegiatan, DEFAULT_KODE } from './jenis-kegiatan.js';
+import { createManageableSelect } from './manageable-select.js';
 
-export const JENIS_KEGIATAN_LABEL = {
-  spray: 'Spray',
-  pemupukan: 'Pemupukan',
-  injek: 'Injek',
-  spray_injek: 'Spray + Injek',
-};
+let jenisKegiatanLabelMap = {};
 
 const greenhouseId = getGreenhouseId();
 
@@ -27,6 +24,23 @@ let rows = [];
 let editingId = null;
 
 form.tanggal.value = todayISO();
+
+async function loadAndCacheJenisKegiatan() {
+  const jenisList = await loadJenisKegiatan();
+  jenisKegiatanLabelMap = Object.fromEntries(jenisList.map((j) => [j.kode, j.nama]));
+  return jenisList;
+}
+
+const jenisKegiatanSelect = createManageableSelect({
+  mount: document.getElementById('jenis-kegiatan-select'),
+  name: 'jenis_kegiatan',
+  placeholder: 'Memuat...',
+  promptLabel: 'Nama jenis kegiatan baru:',
+  load: loadAndCacheJenisKegiatan,
+  isDefault: (kode) => DEFAULT_KODE.includes(kode),
+  onAdd: addJenisKegiatan,
+  onRemove: removeJenisKegiatan,
+});
 
 function hargaPerSatuan(p) {
   return (Number(p.konversi_ke_satuan_dasar) || 0) * (Number(p.harga_per_satuan_dasar) || 0);
@@ -147,6 +161,7 @@ cancelBtn.addEventListener('click', resetForm);
 function resetForm() {
   form.reset();
   form.tanggal.value = todayISO();
+  jenisKegiatanSelect.refresh();
   dosisGrid.querySelectorAll('.dosis-input').forEach((input) => (input.value = ''));
   updateEstimasi();
   editingId = null;
@@ -160,7 +175,7 @@ window.editLogPupuk = (id) => {
 
   form.tanggal.value = row.tanggal;
   form.hst.value = row.hst;
-  form.jenis_kegiatan.value = row.jenis_kegiatan;
+  jenisKegiatanSelect.setValue(row.jenis_kegiatan);
   form.keterangan.value = row.keterangan || '';
 
   dosisGrid.querySelectorAll('.dosis-input').forEach((input) => {
@@ -245,7 +260,7 @@ function render() {
           <p class="text-xs text-muted">${formatTanggal(r.tanggal)}</p>
           <span class="text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full">HST ${r.hst}</span>
           <span class="text-xs bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 px-2 py-0.5 rounded-full">${
-            JENIS_KEGIATAN_LABEL[r.jenis_kegiatan] || r.jenis_kegiatan
+            jenisKegiatanLabelMap[r.jenis_kegiatan] || r.jenis_kegiatan
           }</span>
         </div>
         ${
@@ -286,7 +301,7 @@ exportBtn?.addEventListener('click', () => {
     const row = {
       Tanggal: formatTanggal(r.tanggal),
       HST: r.hst,
-      Kegiatan: JENIS_KEGIATAN_LABEL[r.jenis_kegiatan] || r.jenis_kegiatan,
+      Kegiatan: jenisKegiatanLabelMap[r.jenis_kegiatan] || r.jenis_kegiatan,
     };
 
     masterPupukList.forEach((p) => {
@@ -326,5 +341,6 @@ onFilterChange(load);
 
 (async function init() {
   await loadMasterPupuk();
+  await jenisKegiatanSelect.refresh();
   await load();
 })();

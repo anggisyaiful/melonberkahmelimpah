@@ -19,6 +19,13 @@ const SATUAN_DASAR_OPTIONS = [
   { value: 'ml', label: 'ml' },
 ];
 
+// Pupuk bawaan aplikasi — tidak bisa dihapus dari master pupuk.
+const DEFAULT_PUPUK_NAMES = new Set([
+  'KNO Merah', 'Ultradap', 'Yaramila', 'Magnes', 'MKP', 'KNO Putih', 'Calcium',
+  'Mordern', 'Vitaron', 'Demolis', 'Antila', 'Bendas', 'Starban', 'Javagros',
+  'Kalingga', 'Premix', 'Antracol',
+]);
+
 let rows = [];
 
 initPinGate({
@@ -129,7 +136,11 @@ function render() {
       <div class="flex gap-2 pt-2 border-t border-slate-100 dark:border-slate-700">
         <button type="button" data-action="save" class="flex-1 text-xs px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-md font-medium hover:bg-emerald-100 dark:hover:bg-emerald-900/50">Simpan</button>
         <button type="button" data-action="toggle-aktif" class="flex-1 text-xs px-2.5 py-1.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-md font-medium hover:bg-amber-100 dark:hover:bg-amber-900/50">${aktif ? 'Nonaktifkan' : 'Aktifkan'}</button>
-        <button type="button" data-action="delete" class="text-xs px-2.5 py-1.5 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-md font-medium hover:bg-rose-100 dark:hover:bg-rose-900/50">Hapus</button>
+        ${
+          DEFAULT_PUPUK_NAMES.has(r.nama)
+            ? ''
+            : `<button type="button" data-action="delete" class="text-xs px-2.5 py-1.5 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-md font-medium hover:bg-rose-100 dark:hover:bg-rose-900/50">Hapus</button>`
+        }
       </div>
     </div>
   `;

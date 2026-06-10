@@ -3,14 +3,8 @@ import { applyDateFilter, onFilterChange, getFilter } from './filter.js';
 import { exportSheet, exportWorkbook } from './export.js';
 import { formatMonthLabel } from './ui.js';
 import { loadJenisBiaya } from './biaya-jenis.js';
+import { loadJenisKegiatan } from './jenis-kegiatan.js';
 import { gradeTotalKg, gradePenghasilan, buildPanenExportRows } from './panen-shared.js';
-
-const JENIS_KEGIATAN_LABEL = {
-  spray: 'Spray',
-  pemupukan: 'Pemupukan',
-  injek: 'Injek',
-  spray_injek: 'Spray + Injek',
-};
 
 const greenhouseId = getGreenhouseId();
 
@@ -29,6 +23,7 @@ const els = {
 let lastTotals = null;
 let lastSeries = null;
 let jenisLabelMap = {};
+let jenisKegiatanLabelMap = {};
 let chartBiaya = null;
 let chartPanen = null;
 
@@ -380,7 +375,7 @@ function buildRekapRows(totals) {
 async function exportSemua() {
   if (!greenhouseId) return;
 
-  const [masterPupukList, logPupukRows, logRes, biayaRes, eventsWithDetails, greenhousesRes, jenisList] = await Promise.all([
+  const [masterPupukList, logPupukRows, logRes, biayaRes, eventsWithDetails, greenhousesRes, jenisList, jenisKegiatanList] = await Promise.all([
     fetchMasterPupukActive(),
     fetchLogPupukWithDetails(greenhouseId),
     applyDateFilter(supabase.from('log_harian').select('*').eq('greenhouse_id', greenhouseId), 'tanggal').order('tanggal', { ascending: false }),
@@ -388,9 +383,11 @@ async function exportSemua() {
     fetchEventsWithDetails(),
     supabase.from('greenhouses').select('id, nama').order('created_at', { ascending: true }),
     loadJenisBiaya(),
+    loadJenisKegiatan(),
   ]);
 
   jenisLabelMap = Object.fromEntries(jenisList.map((j) => [j.kode, j.nama]));
+  jenisKegiatanLabelMap = Object.fromEntries(jenisKegiatanList.map((j) => [j.kode, j.nama]));
 
   const logRows = logRes.data || [];
   const biayaRows = biayaRes.data || [];
@@ -414,7 +411,7 @@ async function exportSemua() {
     const row = {
       Tanggal: formatTanggal(r.tanggal),
       HST: r.hst,
-      Kegiatan: JENIS_KEGIATAN_LABEL[r.jenis_kegiatan] || r.jenis_kegiatan,
+      Kegiatan: jenisKegiatanLabelMap[r.jenis_kegiatan] || r.jenis_kegiatan,
     };
     masterPupukList.forEach((p) => {
       const colName = `${p.nama} (${p.satuan})`;

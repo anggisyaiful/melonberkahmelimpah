@@ -2,10 +2,10 @@ import { supabase, formatRupiah, formatTanggal, escapeHtml, showToast, todayISO,
 import { onFilterChange, applyDateFilter } from './filter.js';
 import { exportSheet } from './export.js';
 import { skeletonRows, emptyState, getMonthRanges, renderMonthCompareCard } from './ui.js';
-import { loadJenisBiaya, addJenisBiaya } from './biaya-jenis.js';
+import { loadJenisBiaya, addJenisBiaya, removeJenisBiaya, DEFAULT_KODE } from './biaya-jenis.js';
+import { createManageableSelect } from './manageable-select.js';
 
 let jenisLabelMap = {};
-let lastSelectedJenis = '';
 
 initGreenhouseContext();
 
@@ -54,44 +54,27 @@ form.addEventListener('submit', async (e) => {
 
 cancelBtn.addEventListener('click', resetForm);
 
-async function populateJenisBiaya(selectedKode) {
+async function loadAndCacheJenisBiaya() {
   const jenisList = await loadJenisBiaya();
   jenisLabelMap = Object.fromEntries(jenisList.map((j) => [j.kode, j.nama]));
-
-  const options = jenisList.map((j) => `<option value="${j.kode}">${escapeHtml(j.nama)}</option>`).join('');
-  form.jenis_biaya.innerHTML = options + `<option value="__add__">+ Tambah jenis baru</option>`;
-
-  const target = selectedKode && jenisLabelMap[selectedKode] ? selectedKode : jenisList[0]?.kode || '';
-  form.jenis_biaya.value = target;
-  lastSelectedJenis = target;
+  return jenisList;
 }
 
-form.jenis_biaya.addEventListener('change', async () => {
-  if (form.jenis_biaya.value !== '__add__') {
-    lastSelectedJenis = form.jenis_biaya.value;
-    return;
-  }
-
-  const nama = prompt('Nama jenis biaya baru:');
-  if (!nama || !nama.trim()) {
-    form.jenis_biaya.value = lastSelectedJenis;
-    return;
-  }
-
-  const newRow = await addJenisBiaya(nama);
-  if (!newRow) {
-    showToast('Gagal menambah jenis biaya', true);
-    form.jenis_biaya.value = lastSelectedJenis;
-    return;
-  }
-
-  showToast('Jenis biaya ditambahkan');
-  await populateJenisBiaya(newRow.kode);
+const jenisBiayaSelect = createManageableSelect({
+  mount: document.getElementById('jenis-biaya-select'),
+  name: 'jenis_biaya',
+  placeholder: 'Memuat...',
+  promptLabel: 'Nama jenis biaya baru:',
+  load: loadAndCacheJenisBiaya,
+  isDefault: (kode) => DEFAULT_KODE.includes(kode),
+  onAdd: addJenisBiaya,
+  onRemove: removeJenisBiaya,
 });
 
 function resetForm() {
   form.reset();
   form.tanggal.value = todayISO();
+  jenisBiayaSelect.refresh();
   editingId = null;
   submitBtn.textContent = 'Simpan';
   cancelBtn.classList.add('hidden');
@@ -101,8 +84,7 @@ window.editBiayaOperasional = (id) => {
   const row = rows.find((r) => r.id === id);
   if (!row) return;
   form.tanggal.value = row.tanggal;
-  form.jenis_biaya.value = row.jenis_biaya;
-  lastSelectedJenis = form.jenis_biaya.value;
+  jenisBiayaSelect.setValue(row.jenis_biaya);
   form.nominal.value = row.nominal;
   form.keterangan.value = row.keterangan || '';
   editingId = id;
@@ -209,5 +191,5 @@ exportBtn?.addEventListener('click', () => {
 });
 
 onFilterChange(load);
-populateJenisBiaya().then(load);
+jenisBiayaSelect.refresh().then(load);
 loadMonthSummary();
