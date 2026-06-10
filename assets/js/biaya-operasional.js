@@ -1,7 +1,7 @@
 import { supabase, formatRupiah, formatTanggal, escapeHtml, showToast, todayISO, getGreenhouseId, initGreenhouseContext } from './supabase.js';
 import { onFilterChange, applyDateFilter } from './filter.js';
 import { exportSheet } from './export.js';
-import { skeletonRows, emptyState, renderBottomNav, getMonthRanges, renderMonthCompareCard } from './ui.js';
+import { skeletonRows, emptyState, getMonthRanges, renderMonthCompareCard } from './ui.js';
 
 const JENIS_LABEL = {
   listrik: 'Listrik',
@@ -11,7 +11,6 @@ const JENIS_LABEL = {
 };
 
 initGreenhouseContext();
-renderBottomNav('biaya');
 
 const greenhouseId = getGreenhouseId();
 

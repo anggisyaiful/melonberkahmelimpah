@@ -1,10 +1,9 @@
 import { supabase, formatKg, formatTanggal, escapeHtml, showToast, todayISO, getGreenhouseId, initGreenhouseContext } from './supabase.js';
 import { onFilterChange, applyDateFilter } from './filter.js';
 import { exportSheet } from './export.js';
-import { skeletonRows, emptyState, renderBottomNav, getMonthRanges, renderMonthCompareCard } from './ui.js';
+import { skeletonRows, emptyState, getMonthRanges, renderMonthCompareCard } from './ui.js';
 
 initGreenhouseContext();
-renderBottomNav('panen');
 
 const greenhouseId = getGreenhouseId();
 

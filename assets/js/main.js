@@ -1,5 +1,4 @@
 import { initGreenhouseContext } from './supabase.js';
-import { renderBottomNav } from './ui.js';
 
 initGreenhouseContext();
 
@@ -21,8 +20,6 @@ function switchTab(tab, updateHash = true) {
     btn.classList.toggle('dark:text-slate-400', !active);
     btn.classList.toggle('border-transparent', !active);
   });
-
-  renderBottomNav(tab);
 
   if (updateHash) {
     const newHash = '#' + tab;
