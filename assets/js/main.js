@@ -2,7 +2,7 @@ import { initGreenhouseContext } from './supabase.js';
 
 initGreenhouseContext();
 
-const TABS = ['rekap', 'log-harian', 'biaya-operasional', 'panen'];
+const TABS = ['log-harian', 'rekap'];
 
 function switchTab(tab) {
   TABS.forEach((t) => {

@@ -1,5 +1,4 @@
-import { supabase, formatRupiah, formatTanggal, escapeHtml, showToast, todayISO, getGreenhouseId } from './supabase.js';
-import { refreshRekap } from './rekapitulasi.js';
+import { supabase, formatRupiah, formatTanggal, escapeHtml, showToast, todayISO, getGreenhouseId, initGreenhouseContext } from './supabase.js';
 import { onFilterChange, applyDateFilter } from './filter.js';
 import { exportSheet } from './export.js';
 
@@ -9,6 +8,8 @@ const JENIS_LABEL = {
   tenaga_kerja: 'Tenaga Kerja',
   lainnya: 'Lainnya',
 };
+
+initGreenhouseContext();
 
 const greenhouseId = getGreenhouseId();
 
@@ -49,7 +50,6 @@ form.addEventListener('submit', async (e) => {
   showToast(editingId ? 'Biaya berhasil diperbarui' : 'Biaya berhasil ditambahkan');
   resetForm();
   await load();
-  refreshRekap();
 });
 
 cancelBtn.addEventListener('click', resetForm);
@@ -84,7 +84,6 @@ window.deleteBiayaOperasional = async (id) => {
   }
   showToast('Data dihapus');
   await load();
-  refreshRekap();
 };
 
 export async function load() {

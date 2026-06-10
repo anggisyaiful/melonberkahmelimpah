@@ -1,7 +1,8 @@
-import { supabase, formatKg, formatTanggal, escapeHtml, showToast, todayISO, getGreenhouseId } from './supabase.js';
-import { refreshRekap } from './rekapitulasi.js';
+import { supabase, formatKg, formatTanggal, escapeHtml, showToast, todayISO, getGreenhouseId, initGreenhouseContext } from './supabase.js';
 import { onFilterChange, applyDateFilter } from './filter.js';
 import { exportSheet } from './export.js';
+
+initGreenhouseContext();
 
 const greenhouseId = getGreenhouseId();
 
@@ -41,7 +42,6 @@ form.addEventListener('submit', async (e) => {
   showToast(editingId ? 'Data panen berhasil diperbarui' : 'Data panen berhasil ditambahkan');
   resetForm();
   await load();
-  refreshRekap();
 });
 
 cancelBtn.addEventListener('click', resetForm);
@@ -75,7 +75,6 @@ window.deletePanen = async (id) => {
   }
   showToast('Data dihapus');
   await load();
-  refreshRekap();
 };
 
 export async function load() {
