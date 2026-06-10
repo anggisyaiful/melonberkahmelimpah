@@ -7,7 +7,7 @@ const THIN_BORDER = {
   bottom: { style: 'thin', color: { argb: 'FF000000' } },
   right: { style: 'thin', color: { argb: 'FF000000' } },
 };
-const NUMBER_FORMAT = '#,##0.##';
+const NUMBER_FORMAT = '#,##0';
 
 function sanitizeFilename(str) {
   const cleaned = String(str || 'Greenhouse')
