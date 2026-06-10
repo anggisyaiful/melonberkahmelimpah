@@ -4,9 +4,6 @@ import { supabase } from './supabase.js';
 // kode dipakai sebagai value tersimpan di log_pupuk.jenis_kegiatan,
 // nama adalah label yang ditampilkan ke pengguna.
 
-// Kode bawaan aplikasi — tidak bisa dihapus dari dropdown.
-export const DEFAULT_KODE = ['spray', 'pemupukan', 'injek', 'spray_injek'];
-
 function slugifyKode(nama) {
   return nama
     .trim()

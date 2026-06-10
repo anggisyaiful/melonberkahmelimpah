@@ -4,9 +4,6 @@ import { supabase } from './supabase.js';
 // kode dipakai sebagai value tersimpan di biaya_operasional.jenis_biaya,
 // nama adalah label yang ditampilkan ke pengguna.
 
-// Kode bawaan aplikasi — tidak bisa dihapus dari dropdown.
-export const DEFAULT_KODE = ['listrik', 'air', 'tenaga_kerja', 'lainnya'];
-
 export function slugifyKode(nama) {
   return nama
     .trim()

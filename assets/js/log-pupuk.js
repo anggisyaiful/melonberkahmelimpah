@@ -3,7 +3,7 @@ import { refreshRekap } from './rekapitulasi.js';
 import { onFilterChange, applyDateFilter } from './filter.js';
 import { exportSheet } from './export.js';
 import { skeletonRows, emptyState } from './ui.js';
-import { loadJenisKegiatan, addJenisKegiatan, removeJenisKegiatan, DEFAULT_KODE } from './jenis-kegiatan.js';
+import { loadJenisKegiatan, addJenisKegiatan, removeJenisKegiatan } from './jenis-kegiatan.js';
 import { createManageableSelect } from './manageable-select.js';
 
 let jenisKegiatanLabelMap = {};
@@ -37,7 +37,6 @@ const jenisKegiatanSelect = createManageableSelect({
   placeholder: 'Memuat...',
   promptLabel: 'Nama jenis kegiatan baru:',
   load: loadAndCacheJenisKegiatan,
-  isDefault: (kode) => DEFAULT_KODE.includes(kode),
   onAdd: addJenisKegiatan,
   onRemove: removeJenisKegiatan,
 });

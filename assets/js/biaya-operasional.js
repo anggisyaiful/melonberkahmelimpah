@@ -2,7 +2,7 @@ import { supabase, formatRupiah, formatTanggal, escapeHtml, showToast, todayISO,
 import { onFilterChange, applyDateFilter } from './filter.js';
 import { exportSheet } from './export.js';
 import { skeletonRows, emptyState, getMonthRanges, renderMonthCompareCard } from './ui.js';
-import { loadJenisBiaya, addJenisBiaya, removeJenisBiaya, DEFAULT_KODE } from './biaya-jenis.js';
+import { loadJenisBiaya, addJenisBiaya, removeJenisBiaya } from './biaya-jenis.js';
 import { createManageableSelect } from './manageable-select.js';
 
 let jenisLabelMap = {};
@@ -66,7 +66,6 @@ const jenisBiayaSelect = createManageableSelect({
   placeholder: 'Memuat...',
   promptLabel: 'Nama jenis biaya baru:',
   load: loadAndCacheJenisBiaya,
-  isDefault: (kode) => DEFAULT_KODE.includes(kode),
   onAdd: addJenisBiaya,
   onRemove: removeJenisBiaya,
 });

@@ -4,7 +4,7 @@ const CHEVRON_SVG =
   '<svg class="w-4 h-4 text-muted shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg>';
 
 // Dropdown kustom untuk field "jenis" yang datanya bisa dikelola pengguna:
-// - Pilihan default (isDefault) tidak punya tombol hapus.
+// - Setiap pilihan punya tombol hapus (×), termasuk pilihan bawaan.
 // - Baris terakhir adalah "+ Tambah jenis baru" (prompt -> onAdd).
 // - Sinkron ke <input type="hidden" name="${name}"> agar `form.<name>.value`
 //   tetap berfungsi seperti <select> biasa.
@@ -15,7 +15,6 @@ export function createManageableSelect({
   addLabel = '+ Tambah jenis baru',
   promptLabel = 'Nama baru:',
   load,
-  isDefault,
   onAdd,
   onRemove,
 }) {
@@ -42,15 +41,10 @@ export function createManageableSelect({
     const optionsHtml = items
       .map((item) => {
         const selected = item.kode === value;
-        const removable = !isDefault(item.kode);
         return `
           <div class="flex items-center justify-between ${selected ? 'bg-emerald-50 dark:bg-emerald-900/20' : ''}">
             <button type="button" data-ms-option data-kode="${escapeHtml(item.kode)}" class="flex-1 min-w-0 text-left px-3 py-2 text-sm text-heading hover:bg-slate-50 dark:hover:bg-slate-700/50 truncate">${escapeHtml(item.nama)}</button>
-            ${
-              removable
-                ? `<button type="button" data-ms-remove data-kode="${escapeHtml(item.kode)}" data-nama="${escapeHtml(item.nama)}" class="shrink-0 px-2.5 py-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30" aria-label="Hapus ${escapeHtml(item.nama)}">&times;</button>`
-                : ''
-            }
+            <button type="button" data-ms-remove data-kode="${escapeHtml(item.kode)}" data-nama="${escapeHtml(item.nama)}" class="shrink-0 px-2.5 py-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30" aria-label="Hapus ${escapeHtml(item.nama)}">&times;</button>
           </div>`;
       })
       .join('');
