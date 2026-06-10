@@ -1,3 +1,7 @@
+import { initGreenhouseContext } from './supabase.js';
+
+initGreenhouseContext();
+
 const TABS = ['rekap', 'log-harian', 'biaya-operasional', 'panen'];
 
 function switchTab(tab) {

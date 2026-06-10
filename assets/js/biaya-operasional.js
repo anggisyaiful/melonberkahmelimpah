@@ -1,5 +1,7 @@
-import { supabase, formatRupiah, formatTanggal, escapeHtml, showToast, todayISO } from './supabase.js';
+import { supabase, formatRupiah, formatTanggal, escapeHtml, showToast, todayISO, getGreenhouseId } from './supabase.js';
 import { refreshRekap } from './rekapitulasi.js';
+import { onFilterChange, applyDateFilter } from './filter.js';
+import { exportSheet } from './export.js';
 
 const JENIS_LABEL = {
   listrik: 'Listrik',
@@ -8,11 +10,14 @@ const JENIS_LABEL = {
   lainnya: 'Lainnya',
 };
 
+const greenhouseId = getGreenhouseId();
+
 const form = document.getElementById('form-biaya-operasional');
 const list = document.getElementById('biaya-operasional-list');
 const totalEl = document.getElementById('biaya-operasional-total');
 const submitBtn = document.getElementById('biaya-submit-btn');
 const cancelBtn = document.getElementById('biaya-cancel-btn');
+const exportBtn = document.getElementById('biaya-operasional-export');
 
 let rows = [];
 let editingId = null;
@@ -22,6 +27,7 @@ form.tanggal.value = todayISO();
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const payload = {
+    greenhouse_id: greenhouseId,
     tanggal: form.tanggal.value,
     jenis_biaya: form.jenis_biaya.value,
     nominal: Number(form.nominal.value) || 0,
@@ -82,10 +88,12 @@ window.deleteBiayaOperasional = async (id) => {
 };
 
 export async function load() {
+  if (!greenhouseId) return;
   list.innerHTML = '<p class="text-center text-slate-400 py-6">Memuat...</p>';
-  const { data, error } = await supabase
-    .from('biaya_operasional')
-    .select('*')
+
+  let query = supabase.from('biaya_operasional').select('*').eq('greenhouse_id', greenhouseId);
+  query = applyDateFilter(query, 'tanggal');
+  const { data, error } = await query
     .order('tanggal', { ascending: false })
     .order('created_at', { ascending: false });
 
@@ -130,4 +138,15 @@ function render() {
     .join('');
 }
 
+exportBtn?.addEventListener('click', () => {
+  const exportRows = rows.map((r) => ({
+    Tanggal: formatTanggal(r.tanggal),
+    'Jenis Biaya': JENIS_LABEL[r.jenis_biaya] || r.jenis_biaya,
+    'Nominal (Rp)': Number(r.nominal || 0),
+    Keterangan: r.keterangan || '',
+  }));
+  exportSheet('BiayaOperasional', 'Biaya Operasional', exportRows);
+});
+
+onFilterChange(load);
 load();

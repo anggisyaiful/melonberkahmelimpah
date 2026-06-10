@@ -1,11 +1,16 @@
-import { supabase, formatRupiah, formatTanggal, escapeHtml, showToast, todayISO } from './supabase.js';
+import { supabase, formatRupiah, formatTanggal, escapeHtml, showToast, todayISO, getGreenhouseId } from './supabase.js';
 import { refreshRekap } from './rekapitulasi.js';
+import { onFilterChange, applyDateFilter } from './filter.js';
+import { exportSheet } from './export.js';
+
+const greenhouseId = getGreenhouseId();
 
 const form = document.getElementById('form-log-harian');
 const list = document.getElementById('log-harian-list');
 const totalEl = document.getElementById('log-harian-total');
 const submitBtn = document.getElementById('log-submit-btn');
 const cancelBtn = document.getElementById('log-cancel-btn');
+const exportBtn = document.getElementById('log-harian-export');
 
 let rows = [];
 let editingId = null;
@@ -15,6 +20,7 @@ form.tanggal.value = todayISO();
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const payload = {
+    greenhouse_id: greenhouseId,
     tanggal: form.tanggal.value,
     uraian_kegiatan: form.uraian_kegiatan.value.trim(),
     nominal_biaya: Number(form.nominal_biaya.value) || 0,
@@ -75,10 +81,12 @@ window.deleteLogHarian = async (id) => {
 };
 
 export async function load() {
+  if (!greenhouseId) return;
   list.innerHTML = '<p class="text-center text-slate-400 py-6">Memuat...</p>';
-  const { data, error } = await supabase
-    .from('log_harian')
-    .select('*')
+
+  let query = supabase.from('log_harian').select('*').eq('greenhouse_id', greenhouseId);
+  query = applyDateFilter(query, 'tanggal');
+  const { data, error } = await query
     .order('tanggal', { ascending: false })
     .order('created_at', { ascending: false });
 
@@ -121,4 +129,15 @@ function render() {
     .join('');
 }
 
+exportBtn?.addEventListener('click', () => {
+  const exportRows = rows.map((r) => ({
+    Tanggal: formatTanggal(r.tanggal),
+    'Uraian Kegiatan': r.uraian_kegiatan,
+    'Nominal Biaya (Rp)': Number(r.nominal_biaya || 0),
+    Keterangan: r.keterangan || '',
+  }));
+  exportSheet('LogHarian', 'Log Harian', exportRows);
+});
+
+onFilterChange(load);
 load();

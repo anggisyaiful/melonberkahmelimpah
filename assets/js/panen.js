@@ -1,11 +1,16 @@
-import { supabase, formatKg, formatTanggal, escapeHtml, showToast, todayISO } from './supabase.js';
+import { supabase, formatKg, formatTanggal, escapeHtml, showToast, todayISO, getGreenhouseId } from './supabase.js';
 import { refreshRekap } from './rekapitulasi.js';
+import { onFilterChange, applyDateFilter } from './filter.js';
+import { exportSheet } from './export.js';
+
+const greenhouseId = getGreenhouseId();
 
 const form = document.getElementById('form-panen');
 const list = document.getElementById('panen-list');
 const totalEl = document.getElementById('panen-total');
 const submitBtn = document.getElementById('panen-submit-btn');
 const cancelBtn = document.getElementById('panen-cancel-btn');
+const exportBtn = document.getElementById('panen-export');
 
 let rows = [];
 let editingId = null;
@@ -15,6 +20,7 @@ form.tanggal_panen.value = todayISO();
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const payload = {
+    greenhouse_id: greenhouseId,
     tanggal_panen: form.tanggal_panen.value,
     jumlah_kg: Number(form.jumlah_kg.value) || 0,
     keterangan: form.keterangan.value.trim() || null,
@@ -73,10 +79,12 @@ window.deletePanen = async (id) => {
 };
 
 export async function load() {
+  if (!greenhouseId) return;
   list.innerHTML = '<p class="text-center text-slate-400 py-6">Memuat...</p>';
-  const { data, error } = await supabase
-    .from('panen')
-    .select('*')
+
+  let query = supabase.from('panen').select('*').eq('greenhouse_id', greenhouseId);
+  query = applyDateFilter(query, 'tanggal_panen');
+  const { data, error } = await query
     .order('tanggal_panen', { ascending: false })
     .order('created_at', { ascending: false });
 
@@ -118,4 +126,14 @@ function render() {
     .join('');
 }
 
+exportBtn?.addEventListener('click', () => {
+  const exportRows = rows.map((r) => ({
+    'Tanggal Panen': formatTanggal(r.tanggal_panen),
+    'Jumlah (kg)': Number(r.jumlah_kg || 0),
+    Keterangan: r.keterangan || '',
+  }));
+  exportSheet('Panen', 'Panen', exportRows);
+});
+
+onFilterChange(load);
 load();

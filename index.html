@@ -9,167 +9,31 @@
 <body class="bg-slate-100 text-slate-800 min-h-screen">
   <div class="max-w-3xl mx-auto min-h-screen bg-slate-100 flex flex-col">
 
-    <div class="sticky top-0 z-20 shadow">
-      <header class="bg-emerald-600 text-white px-4 py-3">
-        <h1 class="text-lg sm:text-xl font-bold">🍈 Pencatatan Budidaya Melon</h1>
-        <p class="text-emerald-100 text-xs sm:text-sm mt-0.5">Log harian, biaya operasional, panen &amp; rekap HPP</p>
-      </header>
-      <nav class="flex overflow-x-auto bg-white border-b border-slate-200">
-        <button data-tab="rekap" class="tab-btn flex-1 min-w-[90px] px-3 py-3 text-sm font-medium border-b-2 text-emerald-600 border-emerald-600">Rekap</button>
-        <button data-tab="log-harian" class="tab-btn flex-1 min-w-[110px] px-3 py-3 text-sm font-medium border-b-2 text-slate-500 border-transparent">Log Harian</button>
-        <button data-tab="biaya-operasional" class="tab-btn flex-1 min-w-[140px] px-3 py-3 text-sm font-medium border-b-2 text-slate-500 border-transparent">Biaya Operasional</button>
-        <button data-tab="panen" class="tab-btn flex-1 min-w-[90px] px-3 py-3 text-sm font-medium border-b-2 text-slate-500 border-transparent">Panen</button>
-      </nav>
-    </div>
+    <header class="sticky top-0 z-20 shadow bg-emerald-600 text-white px-4 py-3">
+      <h1 class="text-lg sm:text-xl font-bold">🍈 Pencatatan Budidaya Melon</h1>
+      <p class="text-emerald-100 text-xs sm:text-sm mt-0.5">Pilih greenhouse untuk mulai mencatat</p>
+    </header>
 
     <main class="flex-1 p-4 space-y-4 pb-10">
 
-      <!-- REKAPITULASI -->
-      <section id="tab-rekap" class="space-y-4">
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
-            <p class="text-xs text-slate-500 uppercase tracking-wide">Total Biaya Produksi</p>
-            <p id="rekap-total-biaya" class="text-2xl font-bold text-rose-600 mt-1">Rp 0</p>
-          </div>
-          <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
-            <p class="text-xs text-slate-500 uppercase tracking-wide">Total Hasil Panen</p>
-            <p id="rekap-total-panen" class="text-2xl font-bold text-emerald-600 mt-1">0 kg</p>
-          </div>
-          <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
-            <p class="text-xs text-slate-500 uppercase tracking-wide">HPP per Kg</p>
-            <p id="rekap-hpp" class="text-2xl font-bold text-amber-600 mt-1">-</p>
-          </div>
+      <form id="form-greenhouse" class="bg-white rounded-xl shadow-sm border border-slate-100 p-4 space-y-3">
+        <h2 class="font-semibold text-slate-700">Tambah Greenhouse</h2>
+        <div>
+          <label class="block text-sm text-slate-600 mb-1">Nama Greenhouse</label>
+          <input type="text" name="nama" required placeholder="Contoh: Greenhouse A" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
         </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
-          <h2 class="font-semibold text-slate-700 mb-2">Rincian Biaya Produksi</h2>
-          <dl class="divide-y divide-slate-100 text-sm">
-            <div class="flex justify-between py-2"><dt class="text-slate-500">Total Log Harian</dt><dd id="rekap-log-total" class="font-medium">Rp 0</dd></div>
-            <div class="flex justify-between py-2"><dt class="text-slate-500">Listrik</dt><dd id="rekap-listrik" class="font-medium">Rp 0</dd></div>
-            <div class="flex justify-between py-2"><dt class="text-slate-500">Air</dt><dd id="rekap-air" class="font-medium">Rp 0</dd></div>
-            <div class="flex justify-between py-2"><dt class="text-slate-500">Tenaga Kerja</dt><dd id="rekap-tenaga-kerja" class="font-medium">Rp 0</dd></div>
-            <div class="flex justify-between py-2"><dt class="text-slate-500">Biaya Lainnya</dt><dd id="rekap-lainnya" class="font-medium">Rp 0</dd></div>
-            <div class="flex justify-between py-2 font-semibold text-slate-700"><dt>Total Biaya Operasional</dt><dd id="rekap-operasional-total">Rp 0</dd></div>
-          </dl>
+        <div class="flex gap-2">
+          <button type="submit" id="greenhouse-submit-btn" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-lg font-medium hover:bg-emerald-700">Simpan</button>
+          <button type="button" id="greenhouse-cancel-btn" class="hidden px-4 py-2.5 rounded-lg border border-slate-300 text-slate-600 font-medium hover:bg-slate-50">Batal</button>
         </div>
+      </form>
 
-        <p class="text-xs text-slate-400 leading-relaxed">
-          HPP (Harga Pokok Produksi) per kg dihitung otomatis: <span class="font-medium">Total Biaya Produksi ÷ Total Hasil Panen (kg)</span>.
-        </p>
-
-        <button id="btn-refresh-rekap" class="w-full bg-white border border-emerald-600 text-emerald-600 py-2.5 rounded-lg font-medium hover:bg-emerald-50">
-          Refresh Rekap
-        </button>
-      </section>
-
-      <!-- LOG HARIAN -->
-      <section id="tab-log-harian" class="hidden space-y-4">
-        <form id="form-log-harian" class="bg-white rounded-xl shadow-sm border border-slate-100 p-4 space-y-3">
-          <h2 class="font-semibold text-slate-700">Tambah Log Harian</h2>
-          <div>
-            <label class="block text-sm text-slate-600 mb-1">Tanggal</label>
-            <input type="date" name="tanggal" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-          </div>
-          <div>
-            <label class="block text-sm text-slate-600 mb-1">Uraian Kegiatan</label>
-            <input type="text" name="uraian_kegiatan" required placeholder="Contoh: Penyemprotan pestisida" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-          </div>
-          <div>
-            <label class="block text-sm text-slate-600 mb-1">Nominal Biaya (Rp)</label>
-            <input type="number" name="nominal_biaya" min="0" step="100" placeholder="0" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-          </div>
-          <div>
-            <label class="block text-sm text-slate-600 mb-1">Keterangan</label>
-            <textarea name="keterangan" rows="2" placeholder="Catatan tambahan (opsional)" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
-          </div>
-          <div class="flex gap-2">
-            <button type="submit" id="log-submit-btn" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-lg font-medium hover:bg-emerald-700">Simpan</button>
-            <button type="button" id="log-cancel-btn" class="hidden px-4 py-2.5 rounded-lg border border-slate-300 text-slate-600 font-medium hover:bg-slate-50">Batal</button>
-          </div>
-        </form>
-
-        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4 flex justify-between items-center">
-          <span class="text-sm text-slate-500">Total Biaya Log Harian</span>
-          <span id="log-harian-total" class="font-bold text-rose-600">Rp 0</span>
+      <div>
+        <h2 class="font-semibold text-slate-700 mb-2">Daftar Greenhouse</h2>
+        <div id="greenhouse-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <p class="text-center text-slate-400 py-6 col-span-full">Memuat...</p>
         </div>
-
-        <div id="log-harian-list" class="space-y-2">
-          <p class="text-center text-slate-400 py-6">Memuat...</p>
-        </div>
-      </section>
-
-      <!-- BIAYA OPERASIONAL -->
-      <section id="tab-biaya-operasional" class="hidden space-y-4">
-        <form id="form-biaya-operasional" class="bg-white rounded-xl shadow-sm border border-slate-100 p-4 space-y-3">
-          <h2 class="font-semibold text-slate-700">Tambah Biaya Operasional</h2>
-          <div>
-            <label class="block text-sm text-slate-600 mb-1">Tanggal</label>
-            <input type="date" name="tanggal" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-          </div>
-          <div>
-            <label class="block text-sm text-slate-600 mb-1">Jenis Biaya</label>
-            <select name="jenis_biaya" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-              <option value="listrik">Listrik</option>
-              <option value="air">Air</option>
-              <option value="tenaga_kerja">Tenaga Kerja</option>
-              <option value="lainnya">Lainnya</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm text-slate-600 mb-1">Nominal (Rp)</label>
-            <input type="number" name="nominal" min="0" step="100" required placeholder="0" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-          </div>
-          <div>
-            <label class="block text-sm text-slate-600 mb-1">Keterangan</label>
-            <textarea name="keterangan" rows="2" placeholder="Catatan tambahan (opsional)" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
-          </div>
-          <div class="flex gap-2">
-            <button type="submit" id="biaya-submit-btn" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-lg font-medium hover:bg-emerald-700">Simpan</button>
-            <button type="button" id="biaya-cancel-btn" class="hidden px-4 py-2.5 rounded-lg border border-slate-300 text-slate-600 font-medium hover:bg-slate-50">Batal</button>
-          </div>
-        </form>
-
-        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4 flex justify-between items-center">
-          <span class="text-sm text-slate-500">Total Biaya Operasional</span>
-          <span id="biaya-operasional-total" class="font-bold text-rose-600">Rp 0</span>
-        </div>
-
-        <div id="biaya-operasional-list" class="space-y-2">
-          <p class="text-center text-slate-400 py-6">Memuat...</p>
-        </div>
-      </section>
-
-      <!-- PANEN -->
-      <section id="tab-panen" class="hidden space-y-4">
-        <form id="form-panen" class="bg-white rounded-xl shadow-sm border border-slate-100 p-4 space-y-3">
-          <h2 class="font-semibold text-slate-700">Tambah Data Panen</h2>
-          <div>
-            <label class="block text-sm text-slate-600 mb-1">Tanggal Panen</label>
-            <input type="date" name="tanggal_panen" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-          </div>
-          <div>
-            <label class="block text-sm text-slate-600 mb-1">Jumlah Hasil Panen (kg)</label>
-            <input type="number" name="jumlah_kg" min="0" step="0.1" required placeholder="0" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-          </div>
-          <div>
-            <label class="block text-sm text-slate-600 mb-1">Keterangan</label>
-            <textarea name="keterangan" rows="2" placeholder="Contoh: Grade A, Blok 1 (opsional)" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
-          </div>
-          <div class="flex gap-2">
-            <button type="submit" id="panen-submit-btn" class="flex-1 bg-emerald-600 text-white py-2.5 rounded-lg font-medium hover:bg-emerald-700">Simpan</button>
-            <button type="button" id="panen-cancel-btn" class="hidden px-4 py-2.5 rounded-lg border border-slate-300 text-slate-600 font-medium hover:bg-slate-50">Batal</button>
-          </div>
-        </form>
-
-        <div class="bg-white rounded-xl shadow-sm border border-slate-100 p-4 flex justify-between items-center">
-          <span class="text-sm text-slate-500">Total Hasil Panen</span>
-          <span id="panen-total" class="font-bold text-emerald-600">0 kg</span>
-        </div>
-
-        <div id="panen-list" class="space-y-2">
-          <p class="text-center text-slate-400 py-6">Memuat...</p>
-        </div>
-      </section>
+      </div>
 
     </main>
 
@@ -181,10 +45,6 @@
   <div id="toast" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg shadow-lg text-sm text-white z-50"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script type="module" src="assets/js/main.js"></script>
-  <script type="module" src="assets/js/rekapitulasi.js"></script>
-  <script type="module" src="assets/js/log-harian.js"></script>
-  <script type="module" src="assets/js/biaya-operasional.js"></script>
-  <script type="module" src="assets/js/panen.js"></script>
+  <script type="module" src="assets/js/greenhouses.js"></script>
 </body>
 </html>
