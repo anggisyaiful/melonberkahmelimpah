@@ -242,7 +242,7 @@ async function fetchMasterPupukActive() {
 
 async function fetchLogPupukWithDetails(ghId) {
   const { data: headers, error } = await applyDateFilter(
-    supabase.from('log_harian').select('*').eq('greenhouse_id', ghId).eq('jenis_kegiatan', 'pemupukan'),
+    supabase.from('log_harian').select('*').eq('greenhouse_id', ghId).eq('pakai_dosis_pupuk', true),
     'tanggal'
   )
     .order('tanggal', { ascending: false })
@@ -382,7 +382,7 @@ async function exportSemua() {
     const row = {
       Tanggal: formatTanggal(r.tanggal),
       HST: r.hst ?? '',
-      Kegiatan: jenisKegiatanLabelMap[r.jenis_kegiatan] || r.jenis_kegiatan,
+      Kegiatan: r.jenis_kegiatan ? jenisKegiatanLabelMap[r.jenis_kegiatan] || r.jenis_kegiatan : r.uraian_kegiatan || '',
     };
     masterPupukList.forEach((p) => {
       const colName = `${p.nama} (${p.satuan})`;
