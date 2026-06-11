@@ -61,7 +61,6 @@
       </header>
       <nav class="flex bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 transition-colors">
         <button data-tab="log-harian" class="tab-btn flex-1 px-3 py-3 text-sm font-medium border-b-2 text-emerald-600 dark:text-emerald-400 border-emerald-600 dark:border-emerald-400">Log Harian</button>
-        <button data-tab="log-pupuk" class="tab-btn flex-1 px-3 py-3 text-sm font-medium border-b-2 text-slate-500 dark:text-slate-400 border-transparent">Log Pupuk</button>
         <button data-tab="rekap" class="tab-btn flex-1 px-3 py-3 text-sm font-medium border-b-2 text-slate-500 dark:text-slate-400 border-transparent">Rekap HPP</button>
       </nav>
       <div class="flex flex-wrap items-end gap-2 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-3 py-2 transition-colors">
@@ -84,18 +83,42 @@
       <section id="tab-log-harian" class="space-y-4">
         <form id="form-log-harian" class="card p-4 space-y-3 fade-in">
           <h2 class="font-semibold text-heading">Tambah Log Harian</h2>
-          <div>
-            <label class="label">Tanggal</label>
-            <input type="date" name="tanggal" required class="input-field">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="label">Tanggal</label>
+              <input type="date" name="tanggal" required class="input-field">
+            </div>
+            <div>
+              <label class="label">HST (opsional)</label>
+              <input type="number" name="hst" min="0" step="1" placeholder="0" class="input-field">
+            </div>
           </div>
           <div>
-            <label class="label">Uraian Kegiatan</label>
-            <input type="text" name="uraian_kegiatan" required placeholder="Contoh: Penyemprotan pestisida" class="input-field">
+            <label class="label">Jenis Kegiatan</label>
+            <div id="jenis-kegiatan-select"></div>
           </div>
-          <div>
+
+          <div id="dosis-pupuk-section" class="hidden space-y-3">
+            <div>
+              <label class="label">Dosis Pupuk</label>
+              <div id="log-pupuk-dosis-grid" class="grid grid-cols-2 gap-3">
+                <div class="skeleton h-12"></div>
+                <div class="skeleton h-12"></div>
+                <div class="skeleton h-12"></div>
+                <div class="skeleton h-12"></div>
+              </div>
+            </div>
+            <div class="rounded-xl bg-slate-50 dark:bg-slate-900/50 p-3 flex justify-between items-center">
+              <span class="text-sm text-muted">Estimasi Biaya</span>
+              <span id="log-pupuk-estimasi" class="font-bold text-heading text-lg">Rp 0</span>
+            </div>
+          </div>
+
+          <div id="nominal-biaya-section">
             <label class="label">Nominal Biaya (Rp)</label>
             <input type="number" name="nominal_biaya" min="0" step="100" placeholder="0" class="input-field">
           </div>
+
           <div>
             <label class="label">Keterangan</label>
             <textarea name="keterangan" rows="2" placeholder="Catatan tambahan (opsional)" class="input-field"></textarea>
@@ -113,60 +136,6 @@
         </div>
 
         <div id="log-harian-list" class="space-y-2 fade-in fade-in-2">
-          <div class="skeleton h-20"></div>
-          <div class="skeleton h-20"></div>
-          <div class="skeleton h-20"></div>
-        </div>
-      </section>
-
-      <!-- LOG PUPUK -->
-      <section id="tab-log-pupuk" class="hidden space-y-4">
-        <form id="form-log-pupuk" class="card p-4 space-y-3 fade-in">
-          <h2 class="font-semibold text-heading">Tambah Log Pupuk</h2>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="label">Tanggal</label>
-              <input type="date" name="tanggal" required class="input-field">
-            </div>
-            <div>
-              <label class="label">HST</label>
-              <input type="number" name="hst" min="0" step="1" placeholder="0" class="input-field">
-            </div>
-          </div>
-          <div>
-            <label class="label">Jenis Kegiatan</label>
-            <div id="jenis-kegiatan-select"></div>
-          </div>
-          <div>
-            <label class="label">Dosis Pupuk</label>
-            <div id="log-pupuk-dosis-grid" class="grid grid-cols-2 gap-3">
-              <div class="skeleton h-12"></div>
-              <div class="skeleton h-12"></div>
-              <div class="skeleton h-12"></div>
-              <div class="skeleton h-12"></div>
-            </div>
-          </div>
-          <div>
-            <label class="label">Keterangan</label>
-            <textarea name="keterangan" rows="2" placeholder="Catatan tambahan (opsional)" class="input-field"></textarea>
-          </div>
-          <div class="rounded-xl bg-slate-50 dark:bg-slate-900/50 p-3 flex justify-between items-center">
-            <span class="text-sm text-muted">Estimasi Biaya</span>
-            <span id="log-pupuk-estimasi" class="font-bold text-heading text-lg">Rp 0</span>
-          </div>
-          <div class="flex gap-2">
-            <button type="submit" id="log-pupuk-submit-btn" class="flex-1 btn-primary">Simpan</button>
-            <button type="button" id="log-pupuk-cancel-btn" class="hidden btn-secondary">Batal</button>
-          </div>
-        </form>
-
-        <div class="card p-4 flex flex-wrap justify-between items-center gap-2 fade-in fade-in-1">
-          <span class="text-sm text-muted">Total Biaya Log Pupuk</span>
-          <span id="log-pupuk-total" class="font-bold text-rose-600 dark:text-rose-400">Rp 0</span>
-          <button id="log-pupuk-export" type="button" class="w-full sm:w-auto text-xs px-3 py-1.5 bg-white dark:bg-slate-700 border border-emerald-200 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 rounded-md font-medium hover:bg-emerald-50 dark:hover:bg-slate-600">Export Excel</button>
-        </div>
-
-        <div id="log-pupuk-list" class="space-y-2 fade-in fade-in-2">
           <div class="skeleton h-20"></div>
           <div class="skeleton h-20"></div>
           <div class="skeleton h-20"></div>
@@ -261,6 +230,5 @@
   <script type="module" src="assets/js/filter.js"></script>
   <script type="module" src="assets/js/rekapitulasi.js"></script>
   <script type="module" src="assets/js/log-harian.js"></script>
-  <script type="module" src="assets/js/log-pupuk.js"></script>
 </body>
 </html>

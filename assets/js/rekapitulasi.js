@@ -27,7 +27,7 @@ let jenisKegiatanLabelMap = {};
 let chartBiaya = null;
 let chartPanen = null;
 
-function computeTotals(logRows, biayaRows, pupukDetailRows, panenPairs) {
+function computeTotals(logRows, biayaRows, panenPairs) {
   const totalLog = (logRows || []).reduce((sum, r) => sum + Number(r.nominal_biaya || 0), 0);
 
   const byJenis = {};
@@ -38,8 +38,7 @@ function computeTotals(logRows, biayaRows, pupukDetailRows, panenPairs) {
     totalOperasional += nominal;
   });
 
-  const totalPupuk = (pupukDetailRows || []).reduce((sum, r) => sum + Number(r.biaya || 0), 0);
-  const totalBiaya = totalLog + totalOperasional + totalPupuk;
+  const totalBiaya = totalLog + totalOperasional;
 
   let totalKg = 0;
   let totalPenghasilan = 0;
@@ -51,7 +50,7 @@ function computeTotals(logRows, biayaRows, pupukDetailRows, panenPairs) {
   const hpp = totalKg > 0 ? totalBiaya / totalKg : 0;
   const profit = totalPenghasilan - totalBiaya;
 
-  return { totalLog, byJenis, totalOperasional, totalPupuk, totalBiaya, totalKg, totalPenghasilan, hpp, profit };
+  return { totalLog, byJenis, totalOperasional, totalBiaya, totalKg, totalPenghasilan, hpp, profit };
 }
 
 function buildPanenPairs(eventsWithDetails, ghId) {
@@ -72,7 +71,6 @@ function renderBreakdown(totals) {
 
   const rows = [
     `<div class="flex justify-between py-2"><dt class="text-muted">Total Log Harian</dt><dd class="font-medium text-heading">${formatRupiah(totals.totalLog)}</dd></div>`,
-    `<div class="flex justify-between py-2"><dt class="text-muted">Total Log Pupuk</dt><dd class="font-medium text-heading">${formatRupiah(totals.totalPupuk)}</dd></div>`,
   ];
 
   Object.entries(totals.byJenis).forEach(([kode, nominal]) => {
@@ -115,7 +113,7 @@ function updateProfitDisplay(totals) {
 // Grafik tren biaya & panen per bulan
 // ---------------------------------------------------------------
 
-function buildMonthlySeries(logRows, biayaRows, pupukRows, panenPairs) {
+function buildMonthlySeries(logRows, biayaRows, panenPairs) {
   const costMap = new Map();
   (logRows || []).forEach((r) => {
     const month = (r.tanggal || '').slice(0, 7);
@@ -126,11 +124,6 @@ function buildMonthlySeries(logRows, biayaRows, pupukRows, panenPairs) {
     const month = (r.tanggal || '').slice(0, 7);
     if (!month) return;
     costMap.set(month, (costMap.get(month) || 0) + Number(r.nominal || 0));
-  });
-  (pupukRows || []).forEach((r) => {
-    const month = (r.tanggal || '').slice(0, 7);
-    if (!month) return;
-    costMap.set(month, (costMap.get(month) || 0) + Number(r.biaya || 0));
   });
 
   const harvestMap = new Map();
@@ -225,26 +218,6 @@ document.querySelectorAll('[data-theme-toggle]').forEach((btn) => {
 // Helper data fetch (dipakai refreshRekap & exportSemua)
 // ---------------------------------------------------------------
 
-async function fetchPupukDetailRows(ghId) {
-  const { data: headers } = await applyDateFilter(
-    supabase.from('log_pupuk').select('id, tanggal').eq('greenhouse_id', ghId),
-    'tanggal'
-  );
-  const pupukHeaders = headers || [];
-  const ids = pupukHeaders.map((h) => h.id);
-
-  let detailRows = [];
-  if (ids.length) {
-    const { data } = await supabase.from('log_pupuk_detail').select('biaya, log_pupuk_id').in('log_pupuk_id', ids);
-    detailRows = data || [];
-  }
-
-  const tanggalById = Object.fromEntries(pupukHeaders.map((h) => [h.id, h.tanggal]));
-  const withTanggal = detailRows.map((d) => ({ tanggal: tanggalById[d.log_pupuk_id], biaya: d.biaya }));
-
-  return { detailRows, withTanggal };
-}
-
 async function fetchEventsWithDetails() {
   const { data: eventRows } = await applyDateFilter(supabase.from('event_panen').select('*'), 'tanggal').order('tanggal', {
     ascending: false,
@@ -268,7 +241,10 @@ async function fetchMasterPupukActive() {
 }
 
 async function fetchLogPupukWithDetails(ghId) {
-  const { data: headers, error } = await applyDateFilter(supabase.from('log_pupuk').select('*').eq('greenhouse_id', ghId), 'tanggal')
+  const { data: headers, error } = await applyDateFilter(
+    supabase.from('log_harian').select('*').eq('greenhouse_id', ghId).eq('jenis_kegiatan', 'pemupukan'),
+    'tanggal'
+  )
     .order('tanggal', { ascending: false })
     .order('created_at', { ascending: false });
 
@@ -278,24 +254,22 @@ async function fetchLogPupukWithDetails(ghId) {
 
   let detailRows = [];
   if (ids.length) {
-    const { data } = await supabase.from('log_pupuk_detail').select('*').in('log_pupuk_id', ids);
+    const { data } = await supabase.from('log_pupuk_detail').select('*').in('log_harian_id', ids);
     detailRows = data || [];
   }
 
-  return rows.map((h) => ({ ...h, details: detailRows.filter((d) => d.log_pupuk_id === h.id) }));
+  return rows.map((h) => ({ ...h, details: detailRows.filter((d) => d.log_harian_id === h.id) }));
 }
 
 async function computeGhTotals(ghId, eventsWithDetails) {
-  const [logRes, biayaRes, pupuk] = await Promise.all([
+  const [logRes, biayaRes] = await Promise.all([
     applyDateFilter(supabase.from('log_harian').select('nominal_biaya').eq('greenhouse_id', ghId), 'tanggal'),
     applyDateFilter(supabase.from('biaya_operasional').select('nominal').eq('greenhouse_id', ghId), 'tanggal'),
-    fetchPupukDetailRows(ghId),
   ]);
 
   const totalLog = (logRes.data || []).reduce((sum, r) => sum + Number(r.nominal_biaya || 0), 0);
   const totalOperasional = (biayaRes.data || []).reduce((sum, r) => sum + Number(r.nominal || 0), 0);
-  const totalPupuk = pupuk.detailRows.reduce((sum, r) => sum + Number(r.biaya || 0), 0);
-  const totalBiaya = totalLog + totalOperasional + totalPupuk;
+  const totalBiaya = totalLog + totalOperasional;
 
   let totalKg = 0;
   let totalPenghasilan = 0;
@@ -318,10 +292,9 @@ async function computeGhTotals(ghId, eventsWithDetails) {
 export async function refreshRekap() {
   if (!greenhouseId) return;
 
-  const [logRes, biayaRes, pupuk, eventsWithDetails, jenisList] = await Promise.all([
+  const [logRes, biayaRes, eventsWithDetails, jenisList] = await Promise.all([
     applyDateFilter(supabase.from('log_harian').select('tanggal, nominal_biaya').eq('greenhouse_id', greenhouseId), 'tanggal'),
     applyDateFilter(supabase.from('biaya_operasional').select('tanggal, jenis_biaya, nominal').eq('greenhouse_id', greenhouseId), 'tanggal'),
-    fetchPupukDetailRows(greenhouseId),
     fetchEventsWithDetails(),
     loadJenisBiaya(),
   ]);
@@ -329,7 +302,7 @@ export async function refreshRekap() {
   jenisLabelMap = Object.fromEntries(jenisList.map((j) => [j.kode, j.nama]));
 
   const panenPairs = buildPanenPairs(eventsWithDetails, greenhouseId);
-  const totals = computeTotals(logRes.data, biayaRes.data, pupuk.detailRows, panenPairs);
+  const totals = computeTotals(logRes.data, biayaRes.data, panenPairs);
   lastTotals = totals;
 
   els.totalBiaya.textContent = formatRupiah(totals.totalBiaya);
@@ -339,7 +312,7 @@ export async function refreshRekap() {
   renderBreakdown(totals);
   updateProfitDisplay(totals);
 
-  lastSeries = buildMonthlySeries(logRes.data, biayaRes.data, pupuk.withTanggal, panenPairs);
+  lastSeries = buildMonthlySeries(logRes.data, biayaRes.data, panenPairs);
   renderCharts(lastSeries);
 }
 
@@ -351,7 +324,6 @@ function buildRekapRows(totals) {
   const rows = [
     { Keterangan: 'Periode', Nilai: periode },
     { Keterangan: 'Total Biaya Log Harian (Rp)', Nilai: totals.totalLog },
-    { Keterangan: 'Total Biaya Log Pupuk (Rp)', Nilai: totals.totalPupuk },
   ];
 
   Object.entries(totals.byJenis).forEach(([kode, nominal]) => {
@@ -393,9 +365,8 @@ async function exportSemua() {
   const biayaRows = biayaRes.data || [];
   const greenhouses = greenhousesRes.data || [];
 
-  const pupuk = await fetchPupukDetailRows(greenhouseId);
   const panenPairs = buildPanenPairs(eventsWithDetails, greenhouseId);
-  const totals = computeTotals(logRows, biayaRows, pupuk.detailRows, panenPairs);
+  const totals = computeTotals(logRows, biayaRows, panenPairs);
 
   // Sheet 1: Log Pupuk (pivot)
   const pupukNames = masterPupukList.map((p) => `${p.nama} (${p.satuan})`);
@@ -410,7 +381,7 @@ async function exportSemua() {
   const logPupukExportRows = logPupukRows.map((r) => {
     const row = {
       Tanggal: formatTanggal(r.tanggal),
-      HST: r.hst,
+      HST: r.hst ?? '',
       Kegiatan: jenisKegiatanLabelMap[r.jenis_kegiatan] || r.jenis_kegiatan,
     };
     masterPupukList.forEach((p) => {
@@ -445,14 +416,16 @@ async function exportSemua() {
   // Sheet 2: Log Harian
   const logHarianRows = logRows.map((r) => ({
     Tanggal: formatTanggal(r.tanggal),
-    'Uraian Kegiatan': r.uraian_kegiatan,
+    HST: r.hst ?? '',
+    'Jenis Kegiatan': r.jenis_kegiatan ? jenisKegiatanLabelMap[r.jenis_kegiatan] || r.jenis_kegiatan : r.uraian_kegiatan || '',
     'Nominal Biaya (Rp)': Number(r.nominal_biaya || 0),
     Keterangan: r.keterangan || '',
   }));
   if (logHarianRows.length) {
     logHarianRows.push({
       Tanggal: 'TOTAL',
-      'Uraian Kegiatan': '',
+      HST: '',
+      'Jenis Kegiatan': '',
       'Nominal Biaya (Rp)': totals.totalLog,
       Keterangan: '',
     });
@@ -508,7 +481,7 @@ async function exportSemua() {
 document.getElementById('btn-refresh-rekap')?.addEventListener('click', refreshRekap);
 
 document.getElementById('btn-export-rekap')?.addEventListener('click', () => {
-  exportSheet('Rekap', 'Rekap', buildRekapRows(lastTotals || computeTotals([], [], [], [])));
+  exportSheet('Rekap', 'Rekap', buildRekapRows(lastTotals || computeTotals([], [], [])));
 });
 
 document.getElementById('btn-export-semua')?.addEventListener('click', exportSemua);

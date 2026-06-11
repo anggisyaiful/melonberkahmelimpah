@@ -254,7 +254,7 @@ list.addEventListener('click', async (e) => {
     await load();
   } else if (action === 'delete') {
     const row = rows.find((r) => r.id === id);
-    if (!confirm(`Hapus "${row?.nama || 'pupuk ini'}" dari master pupuk? Data Log Pupuk yang sudah ada tetap tersimpan (snapshot).`)) return;
+    if (!confirm(`Hapus "${row?.nama || 'pupuk ini'}" dari master pupuk? Data Log Harian yang sudah ada tetap tersimpan (snapshot).`)) return;
     const { error } = await supabase.from('master_pupuk').delete().eq('id', id);
     if (error) {
       showToast('Gagal menghapus: ' + error.message, true);

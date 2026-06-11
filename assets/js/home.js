@@ -56,19 +56,17 @@ document.querySelectorAll('[data-back]').forEach((btn) => {
 // ---------------------------------------------------------------
 
 async function loadSummary() {
-  const [ghRes, logRes, biayaRes, pupukRes, panenRes] = await Promise.all([
+  const [ghRes, logRes, biayaRes, panenRes] = await Promise.all([
     supabase.from('greenhouses').select('id', { count: 'exact', head: true }),
     supabase.from('log_harian').select('nominal_biaya'),
     supabase.from('biaya_operasional').select('nominal'),
-    supabase.from('log_pupuk_detail').select('biaya'),
     supabase.from('panen_detail').select('kg_grade_a, kg_grade_b, kg_grade_c, kg_grade_d'),
   ]);
 
   const ghCount = ghRes.count || 0;
   const totalLog = (logRes.data || []).reduce((sum, r) => sum + Number(r.nominal_biaya || 0), 0);
   const totalOperasional = (biayaRes.data || []).reduce((sum, r) => sum + Number(r.nominal || 0), 0);
-  const totalPupuk = (pupukRes.data || []).reduce((sum, r) => sum + Number(r.biaya || 0), 0);
-  const totalBiaya = totalLog + totalOperasional + totalPupuk;
+  const totalBiaya = totalLog + totalOperasional;
   const totalPanen = (panenRes.data || []).reduce(
     (sum, r) => sum + Number(r.kg_grade_a || 0) + Number(r.kg_grade_b || 0) + Number(r.kg_grade_c || 0) + Number(r.kg_grade_d || 0),
     0

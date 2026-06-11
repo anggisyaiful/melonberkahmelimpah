@@ -1,7 +1,7 @@
 import { supabase } from './supabase.js';
 
-// Helper bersama untuk daftar "jenis kegiatan" Log Pupuk (global, lintas GH).
-// kode dipakai sebagai value tersimpan di log_pupuk.jenis_kegiatan,
+// Helper bersama untuk daftar "jenis kegiatan" Log Harian (global, lintas GH).
+// kode dipakai sebagai value tersimpan di log_harian.jenis_kegiatan,
 // nama adalah label yang ditampilkan ke pengguna.
 
 function slugifyKode(nama) {

@@ -17,6 +17,7 @@ export function createManageableSelect({
   load,
   onAdd,
   onRemove,
+  onChange,
 }) {
   let items = [];
   let value = '';
@@ -57,6 +58,7 @@ export function createManageableSelect({
     hidden.value = kode;
     const item = items.find((i) => i.kode === kode);
     label.textContent = item ? item.nama : placeholder;
+    onChange?.(kode);
   }
 
   function openPanel() {

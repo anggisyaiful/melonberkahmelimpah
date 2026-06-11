@@ -3,10 +3,21 @@ import { refreshRekap } from './rekapitulasi.js';
 import { onFilterChange, applyDateFilter } from './filter.js';
 import { exportSheet } from './export.js';
 import { skeletonRows, emptyState } from './ui.js';
+import { loadJenisKegiatan, addJenisKegiatan, removeJenisKegiatan } from './jenis-kegiatan.js';
+import { createManageableSelect } from './manageable-select.js';
+
+const PEMUPUKAN_KODE = 'pemupukan';
+
+let jenisKegiatanLabelMap = {};
+let masterPupukList = [];
 
 const greenhouseId = getGreenhouseId();
 
 const form = document.getElementById('form-log-harian');
+const dosisSection = document.getElementById('dosis-pupuk-section');
+const nominalSection = document.getElementById('nominal-biaya-section');
+const dosisGrid = document.getElementById('log-pupuk-dosis-grid');
+const estimasiEl = document.getElementById('log-pupuk-estimasi');
 const list = document.getElementById('log-harian-list');
 const totalEl = document.getElementById('log-harian-total');
 const submitBtn = document.getElementById('log-submit-btn');
@@ -18,26 +29,156 @@ let editingId = null;
 
 form.tanggal.value = todayISO();
 
+function isPemupukan(kode) {
+  return kode === PEMUPUKAN_KODE;
+}
+
+function kegiatanLabel(row) {
+  if (row.jenis_kegiatan) return jenisKegiatanLabelMap[row.jenis_kegiatan] || row.jenis_kegiatan;
+  return row.uraian_kegiatan || '-';
+}
+
+function updateSectionVisibility(kode) {
+  const pemupukan = isPemupukan(kode);
+  dosisSection.classList.toggle('hidden', !pemupukan);
+  nominalSection.classList.toggle('hidden', pemupukan);
+  if (pemupukan) updateEstimasi();
+}
+
+async function loadAndCacheJenisKegiatan() {
+  const jenisList = await loadJenisKegiatan();
+  jenisKegiatanLabelMap = Object.fromEntries(jenisList.map((j) => [j.kode, j.nama]));
+  return jenisList;
+}
+
+const jenisKegiatanSelect = createManageableSelect({
+  mount: document.getElementById('jenis-kegiatan-select'),
+  name: 'jenis_kegiatan',
+  placeholder: 'Memuat...',
+  promptLabel: 'Nama jenis kegiatan baru:',
+  load: loadAndCacheJenisKegiatan,
+  onAdd: addJenisKegiatan,
+  onRemove: removeJenisKegiatan,
+  onChange: updateSectionVisibility,
+});
+
+function hargaPerSatuan(p) {
+  return (Number(p.konversi_ke_satuan_dasar) || 0) * (Number(p.harga_per_satuan_dasar) || 0);
+}
+
+async function loadMasterPupuk() {
+  const { data, error } = await supabase
+    .from('master_pupuk')
+    .select('*')
+    .eq('aktif', true)
+    .order('urutan', { ascending: true });
+
+  if (error) {
+    dosisGrid.innerHTML = emptyState('Gagal memuat master pupuk: ' + escapeHtml(error.message), 'search');
+    return;
+  }
+
+  masterPupukList = data || [];
+  renderDosisGrid();
+}
+
+function renderDosisGrid() {
+  if (!masterPupukList.length) {
+    dosisGrid.innerHTML = emptyState('Belum ada data master pupuk. Tambahkan lewat menu Master Pupuk.', 'box');
+    return;
+  }
+
+  dosisGrid.innerHTML = masterPupukList
+    .map(
+      (p) => `
+    <div>
+      <label class="label text-xs">${escapeHtml(p.nama)} (${p.satuan})</label>
+      <input type="number" min="0" step="0.01" placeholder="0" data-pupuk-id="${p.id}" class="dosis-input input-field text-sm !py-1.5">
+    </div>
+  `
+    )
+    .join('');
+}
+
+function updateEstimasi() {
+  let total = 0;
+  dosisGrid.querySelectorAll('.dosis-input').forEach((input) => {
+    const dosis = Number(input.value) || 0;
+    if (dosis <= 0) return;
+    const p = masterPupukList.find((m) => m.id === input.dataset.pupukId);
+    if (!p) return;
+    total += dosis * hargaPerSatuan(p);
+  });
+  estimasiEl.textContent = formatRupiah(total);
+}
+
+dosisGrid.addEventListener('input', updateEstimasi);
+
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const payload = {
+
+  const jenisKegiatan = jenisKegiatanSelect.getValue();
+  const pemupukan = isPemupukan(jenisKegiatan);
+
+  const details = [];
+  let nominalBiaya;
+
+  if (pemupukan) {
+    dosisGrid.querySelectorAll('.dosis-input').forEach((input) => {
+      const dosis = Number(input.value) || 0;
+      if (dosis <= 0) return;
+      const p = masterPupukList.find((m) => m.id === input.dataset.pupukId);
+      if (!p) return;
+      const harga = hargaPerSatuan(p);
+      details.push({
+        master_pupuk_id: p.id,
+        nama_pupuk: p.nama,
+        satuan: p.satuan,
+        dosis,
+        harga_per_satuan: harga,
+        biaya: dosis * harga,
+      });
+    });
+    nominalBiaya = details.reduce((sum, d) => sum + d.biaya, 0);
+  } else {
+    nominalBiaya = Number(form.nominal_biaya.value) || 0;
+  }
+
+  const headerPayload = {
     greenhouse_id: greenhouseId,
     tanggal: form.tanggal.value,
-    uraian_kegiatan: form.uraian_kegiatan.value.trim(),
-    nominal_biaya: Number(form.nominal_biaya.value) || 0,
+    hst: form.hst.value !== '' ? Number(form.hst.value) : null,
+    jenis_kegiatan: jenisKegiatan,
+    nominal_biaya: nominalBiaya,
     keterangan: form.keterangan.value.trim() || null,
   };
 
+  let logHarianId = editingId;
   let error;
+
   if (editingId) {
-    ({ error } = await supabase.from('log_harian').update(payload).eq('id', editingId));
+    ({ error } = await supabase.from('log_harian').update(headerPayload).eq('id', editingId));
+    if (!error) {
+      ({ error } = await supabase.from('log_pupuk_detail').delete().eq('log_harian_id', editingId));
+    }
   } else {
-    ({ error } = await supabase.from('log_harian').insert(payload));
+    const { data, error: insertError } = await supabase.from('log_harian').insert(headerPayload).select('id').single();
+    error = insertError;
+    if (!error) logHarianId = data.id;
   }
 
   if (error) {
     showToast('Gagal menyimpan: ' + error.message, true);
     return;
+  }
+
+  if (details.length) {
+    const detailRows = details.map((d) => ({ ...d, log_harian_id: logHarianId }));
+    const { error: detailError } = await supabase.from('log_pupuk_detail').insert(detailRows);
+    if (detailError) {
+      showToast('Gagal menyimpan detail: ' + detailError.message, true);
+      return;
+    }
   }
 
   showToast(editingId ? 'Log berhasil diperbarui' : 'Log berhasil ditambahkan');
@@ -51,6 +192,9 @@ cancelBtn.addEventListener('click', resetForm);
 function resetForm() {
   form.reset();
   form.tanggal.value = todayISO();
+  jenisKegiatanSelect.refresh();
+  dosisGrid.querySelectorAll('.dosis-input').forEach((input) => (input.value = ''));
+  updateEstimasi();
   editingId = null;
   submitBtn.textContent = 'Simpan';
   cancelBtn.classList.add('hidden');
@@ -59,10 +203,23 @@ function resetForm() {
 window.editLogHarian = (id) => {
   const row = rows.find((r) => r.id === id);
   if (!row) return;
+
   form.tanggal.value = row.tanggal;
-  form.uraian_kegiatan.value = row.uraian_kegiatan;
-  form.nominal_biaya.value = row.nominal_biaya;
+  form.hst.value = row.hst ?? '';
   form.keterangan.value = row.keterangan || '';
+  jenisKegiatanSelect.setValue(row.jenis_kegiatan || '');
+
+  if (isPemupukan(row.jenis_kegiatan)) {
+    dosisGrid.querySelectorAll('.dosis-input').forEach((input) => {
+      const detail = (row.details || []).find((d) => d.master_pupuk_id === input.dataset.pupukId);
+      input.value = detail ? detail.dosis : '';
+    });
+    updateEstimasi();
+    form.nominal_biaya.value = '';
+  } else {
+    form.nominal_biaya.value = row.nominal_biaya;
+  }
+
   editingId = id;
   submitBtn.textContent = 'Update';
   cancelBtn.classList.remove('hidden');
@@ -96,7 +253,27 @@ export async function load() {
     return;
   }
 
-  rows = data;
+  const headers = data || [];
+  const pemupukanIds = headers.filter((h) => isPemupukan(h.jenis_kegiatan)).map((h) => h.id);
+
+  let detailRows = [];
+  if (pemupukanIds.length) {
+    const { data: details, error: detailError } = await supabase
+      .from('log_pupuk_detail')
+      .select('*')
+      .in('log_harian_id', pemupukanIds);
+    if (detailError) {
+      list.innerHTML = emptyState('Gagal memuat detail: ' + escapeHtml(detailError.message), 'search');
+      return;
+    }
+    detailRows = details || [];
+  }
+
+  rows = headers.map((h) => ({
+    ...h,
+    details: detailRows.filter((d) => d.log_harian_id === h.id),
+  }));
+
   render();
 }
 
@@ -111,13 +288,21 @@ function render() {
   totalEl.textContent = formatRupiah(total);
 
   list.innerHTML = rows
-    .map(
-      (r, i) => `
+    .map((r, i) => {
+      const pupukList = isPemupukan(r.jenis_kegiatan)
+        ? (r.details || []).map((d) => `${escapeHtml(d.nama_pupuk)}: ${d.dosis} ${d.satuan}`).join(', ')
+        : '';
+
+      return `
     <div class="card p-3 flex justify-between gap-3 fade-in fade-in-${Math.min(i + 1, 5)}">
       <div class="min-w-0 flex-1">
-        <p class="text-xs text-muted">${formatTanggal(r.tanggal)}</p>
-        <p class="font-medium text-heading break-words">${escapeHtml(r.uraian_kegiatan)}</p>
-        ${r.keterangan ? `<p class="text-sm text-muted break-words mt-0.5">${escapeHtml(r.keterangan)}</p>` : ''}
+        <div class="flex flex-wrap items-center gap-1.5">
+          <p class="text-xs text-muted">${formatTanggal(r.tanggal)}</p>
+          ${r.hst != null ? `<span class="text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full">HST ${r.hst}</span>` : ''}
+          <span class="text-xs bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400 px-2 py-0.5 rounded-full">${escapeHtml(kegiatanLabel(r))}</span>
+        </div>
+        ${pupukList ? `<p class="text-sm text-muted break-words mt-1">${pupukList}</p>` : ''}
+        ${r.keterangan ? `<p class="text-sm text-muted break-words mt-1">${escapeHtml(r.keterangan)}</p>` : ''}
         <p class="text-rose-600 dark:text-rose-400 font-semibold mt-1">${formatRupiah(r.nominal_biaya)}</p>
       </div>
       <div class="flex flex-col gap-1.5 shrink-0">
@@ -125,15 +310,16 @@ function render() {
         <button onclick="deleteLogHarian('${r.id}')" class="text-xs px-2.5 py-1 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-md font-medium hover:bg-rose-100 dark:hover:bg-rose-900/50">Hapus</button>
       </div>
     </div>
-  `
-    )
+  `;
+    })
     .join('');
 }
 
 exportBtn?.addEventListener('click', () => {
   const exportRows = rows.map((r) => ({
     Tanggal: formatTanggal(r.tanggal),
-    'Uraian Kegiatan': r.uraian_kegiatan,
+    HST: r.hst ?? '',
+    'Jenis Kegiatan': kegiatanLabel(r),
     'Nominal Biaya (Rp)': Number(r.nominal_biaya || 0),
     Keterangan: r.keterangan || '',
   }));
@@ -141,4 +327,9 @@ exportBtn?.addEventListener('click', () => {
 });
 
 onFilterChange(load);
-load();
+
+(async function init() {
+  await loadMasterPupuk();
+  await jenisKegiatanSelect.refresh();
+  await load();
+})();
