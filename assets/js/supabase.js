@@ -1,8 +1,8 @@
 // Konfigurasi koneksi Supabase + helper bersama untuk seluruh modul.
 // "publishable key" aman dipakai di sisi client karena akses data
 // dikontrol lewat Row Level Security (lihat supabase/schema.sql).
-const SUPABASE_URL = 'https://dbqgcvvfoloxpjmspzmq.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_-j2XUHfmhAC7skAvLW3DMw_wQ6khv7T';
+const SUPABASE_URL = 'https://bkukhtovptkwbuhypbuf.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_ZC6-OGRdkgAIep7M3eJilA_ff8DdefU';
 
 export const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
