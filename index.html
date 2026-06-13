@@ -44,6 +44,17 @@
       .skeleton { @apply animate-pulse bg-slate-200 dark:bg-slate-700 rounded-lg; }
     }
   </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  (async () => {
+    const SUPABASE_URL = 'https://bkukhtovptkwbuhypbuf.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_ZC6-OGRdkgAIep7M3eJilA_ff8Dd...';
+    const { createClient } = supabase;
+    const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { data } = await sb.auth.getSession();
+    if (!data.session) window.location.href = 'login.html';
+  })();
+</script>
 </head>
 <body class="bg-gradient-to-b from-emerald-50 via-slate-50 to-slate-100 dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-300">
   <div class="page-shell">
@@ -154,5 +165,15 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="module" src="assets/js/theme.js"></script>
   <script type="module" src="assets/js/home.js"></script>
+<script>
+  async function logout() {
+    const SUPABASE_URL = 'https://bkukhtovptkwbuhypbuf.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_ZC6-OGRdkgAIep7M3eJilA_ff8Dd...';
+    const { createClient } = supabase;
+    const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+    await sb.auth.signOut();
+    window.location.href = 'login.html';
+  }
+</script>
 </body>
 </html>
